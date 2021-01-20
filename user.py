@@ -9,7 +9,7 @@ class user:
         # self.isOnline=False          #boolean to denote user is online or not
 
     #Function to return user's ip and port
-    def getIpPort(self,username):
+    def getIpPort(self):
         return self.curr_ip,self.curr_port
 
     #function receives username,password and dictionary of users: {'username':'password'}
@@ -47,7 +47,7 @@ class user:
     def createGroup(self,groupName,allGroups):
         if groupName in allGroups:
             sys.stderr.write("Group already exists.")
-            if group in groupList:
+            if groupName in groupList:
                 sys.stderr.write("And you are already part of it")
             else:
                 ans= input("Do you want to join this group? [Y/N]")
@@ -55,8 +55,8 @@ class user:
                     joinGroup(groupName,allGroups)
                 else:
                     return
-        groupName.append(groupName)
-        allGroups.append(groupName)
+        groupList.append(groupName)
+        allGroups[groupName]=self.username
         return allGroups
     
     #Function to join group
@@ -64,6 +64,8 @@ class user:
         if groupName not in allGroups:
             sys.stderr.write("Group doesn't exist. Creating group:"+groupName)
             createGroup(groupName,allGroups)
+        else:
+            allGroups[groupName].append(self.username)
     
     #def broadcast a msg/file to a group
     def broadcastToGroup(self,messageObj, groupName):
