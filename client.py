@@ -19,6 +19,7 @@ class Client:
         print(f"[*] Host: {self.CLIENT_IP} | Port: {self.PORT}")
 
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.current_userid=""
 
 
     def connectToServer(self):
@@ -33,12 +34,63 @@ class Client:
 
     	quit=False
     	while quit == False :
-    		print("Lets start")
+    		print("Please choose from one of the following commands")
+    		print("CREATE_USER <NAME> <USER_NAME> <PASSWORD>")
+    		print("LOGIN <USER_NAME> <PASSWORD>")
+    		print("JOIN <GROUP_NAME> ")
+    		print("CREATE <GROUP_NAME> ")
+    		print("LIST")
+    		print("SEND <USER_NAME> <MESSAGE>")
+    		print("SEND_TO_GROUP <GROUP_NAME> <MESSAGE>")
+    		print("SEND FILE <USER_NAME> <FILENAME>")
+    		print("SEND_TO_GROUP FILE <GROUP_NAME> <FILENAME>")
+
+
     		my_input=input()
+    		my_input_list=my_input.split()
+    		
+
+    		if(my_input_list[0] == "CREATE_USER") :
+    			self.create_user(my_input_list)
+
+    		elif(my_input_list[0] == "CREATE")	:
+    			self.create_group(my_input_list) 
+    		elif(my_input_list[0] == "SEND")	:
+    			self.send_message(my_input_list) 
+    		elif(my_input_list[0] == "LOGIN")	:
+    			self.login_user(my_input_list) 
+    		elif(my_input_list[0] == "JOIN")	:
+    			self.join_group(my_input_list) 
+    		elif(my_input_list[0] == "LIST")	:
+    			self.list_group(my_input_list) 
+    		elif(my_input_list[0] == "SEND_TO_GROUP")	:
+    			self.send_to_group(my_input_list) 
+
+
+
+
+
     		self.send(my_input)
 
     		
+    def create_user(self,command_list):
+    	print(command_list)
 
+    def login_user(self,command_list):
+    	print(command_list)
+    def create_group(self,command_list):
+    	print(command_list)
+    def join_group(self,command_list):
+    	print(command_list)
+
+    def send_message(self,command_list):
+    	print(command_list)
+
+    def list_group(self,command_list):
+    	print(command_list)
+    def send_to_group(self,command_list):
+    	print(command_list)	
+    	
     def send(self,msg) :
     	message = msg.encode(FORMAT)
     	msg_length = len(message)
@@ -48,17 +100,7 @@ class Client:
     	self.client.send(message)
 		
 		
-		
-		
-		
-		
-		
-
-
-
-
-
-        
+   
 
 
 client =Client(SERVER,PORT,"127.0.0.1")
