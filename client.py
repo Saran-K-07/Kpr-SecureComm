@@ -7,25 +7,25 @@ FORMAT = "utf-8"
 # SERVER = socket.gethostbyname(socket.gethostname())
 
 SERVER = "127.0.0.2"
-ADDR = (SERVER,PORT)
+#ADDR = (SERVER,PORT)
 DISCONNECT_MESSAGE="!DISCONNECT"
 
 class Client:
     def __init__(self, server_ip, port, client_ip):
-        self.SERVER_IP = server_ip
-        self.PORT = port
-        self.CLIENT_IP = client_ip    
-        self.isLoggedIn=False  
-
+        self.SERVER_IP = server_ip                              #server's ip to connect to
+        self.PORT = port										#server's port to connect to
+        self.CLIENT_IP = client_ip    							#client's own ip
+        self.isLoggedIn=False  									#active status of client
+		self.ADDR=(self.IP,self.PORT)  							#tuple of server ip and server address
         print(f"[*] Host: {self.CLIENT_IP} | Port: {self.PORT}")
 
-        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    #socket object on client side
         self.current_userid=""
 
 
     def connectToServer(self):
         try:
-            self.client.connect((self.SERVER_IP, self.PORT))
+            self.client.connect((self.ADDR))                      #establish connection with server on address ADDR=SERVER_IP,SERVER_PORT
 
         except socket.error as e:
             print(str(e))
@@ -78,13 +78,13 @@ class Client:
 
 
     		
-
+	#function to handle message received from others over a socket
     def recieve_message(self ):
     	msg=""
-    	msg_length=self.client.recv(HEADER).decode(FORMAT)
+    	msg_length=self.client.recv(HEADER).decode(FORMAT)   #get length of  msg to receive by using initial buffer size of header=64B
     	if msg_length :
-    		msg_length=int(msg_length)	
-    		msg=self.client.recv(msg_length).decode(FORMAT)	
+    		msg_length=int(msg_length)	                    #convert length to int as it was received in utf-8 format
+    		msg=self.client.recv(msg_length).decode(FORMAT)	 #reset buffer size to received msg length size and receive msg
 			
     	return msg
 		
@@ -209,4 +209,3 @@ client.operate()
 # 		send(txt)
 		
 	
-
