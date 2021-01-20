@@ -10,7 +10,7 @@ class user:
 
     #function receives username,password and dictionary of users: {'username':'password'}
     #returns 1: userid password matches, 0 if userid matches but wrong password, -1 if user doesn't exist
-    def signIn(self.username,self.password, self.userDict):
+    def signIn(self,username,password,userDict):
         foundFlag=0
         for user in userDict:
             if user==username:
@@ -20,7 +20,7 @@ class user:
                     #isOnline=True
                     print("User logged in successfully!")
                     return 1
-                else
+                else:
                     print("UserId and Password doesn't match")
                     return 0
         if foundFlag==0:
@@ -40,7 +40,7 @@ class user:
                 print(group)
 
     #Function to create group
-    def createGroup(self.groupName, self.allGroups):
+    def createGroup(self,groupName,allGroups):
         if groupName in allGroups:
             sys.stderr.write("Group already exists.")
             if group in groupList:
@@ -56,15 +56,15 @@ class user:
         return allGroups
     
     #Function to join group
-    def joinGroup(self.groupName, self.allGroups):
+    def joinGroup(self,groupName,allGroups):
         if groupName not in allGroups:
             sys.stderr.write("Group doesn't exist. Creating group:"+groupName)
             createGroup(groupName,allGroups)
     
     #def broadcast a msg/file to a group
-    def broadcastToGroup(messageObj, groupName):
+    def broadcastToGroup(self,messageObj, groupName):
         pass
 
     #def send msg/file to single user
-    def sendToUser(messageObj, username):
+    def sendToUser(self,messageObj, username):
         pass
