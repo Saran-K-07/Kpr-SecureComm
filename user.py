@@ -36,6 +36,7 @@ class user:
             for group in groupList:
                 print(group)
 
+
     
     #Function to join group
     def joinGroup(self,groupName):
@@ -43,6 +44,7 @@ class user:
             self.groupList.append(groupName)
 
        
+
 
     
     #def broadcast a msg/file to a group
