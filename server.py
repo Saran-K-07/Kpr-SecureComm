@@ -13,6 +13,20 @@ DISCONNECT_MESSAGE="!DISCONNECT"
 
 # server.bind(ADDR)
 
+class Group :
+	def __init__(self,id):
+		self.group_id = id
+		self.users_list=set()
+
+	def show_members(self) :
+		print(self.group_id," : ",self.users_list)
+
+	def add_member(self,user_id) :
+		self.users_list.add(user_id)
+
+		
+		
+
 class Server :
 	def __init__(self, server_ip, server_port):
 		self.IP = server_ip
