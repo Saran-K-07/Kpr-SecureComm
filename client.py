@@ -14,7 +14,8 @@ class Client:
     def __init__(self, server_ip, port, client_ip):
         self.SERVER_IP = server_ip
         self.PORT = port
-        self.CLIENT_IP = client_ip      
+        self.CLIENT_IP = client_ip    
+        self.isLoggedIn=False  
 
         print(f"[*] Host: {self.CLIENT_IP} | Port: {self.PORT}")
 
@@ -44,24 +45,30 @@ class Client:
     		print("SEND_TO_GROUP <GROUP_NAME> <MESSAGE>")
     		print("SEND FILE <USER_NAME> <FILENAME>")
     		print("SEND_TO_GROUP FILE <GROUP_NAME> <FILENAME>")
+    		print()
 
 
     		my_input=input()
     		my_input_list=my_input.split()
+    		print("my_input_list " ,my_input_list)
     		
 
     		if(my_input_list[0] == "CREATE_USER") :
+    			self.send(my_input)
     			self.create_user(my_input_list)
+
 
     		elif(my_input_list[0] == "CREATE")	:
     			self.create_group(my_input_list) 
     		elif(my_input_list[0] == "SEND")	:
     			self.send_message(my_input_list) 
     		elif(my_input_list[0] == "LOGIN")	:
+    			self.send(my_input)
     			self.login_user(my_input_list) 
     		elif(my_input_list[0] == "JOIN")	:
     			self.join_group(my_input_list) 
-    		elif(my_input_list[0] == "LIST")	:
+    		elif(my_input_list[0] == "LIST") :
+    			self.send(my_input) 	
     			self.list_group(my_input_list) 
     		elif(my_input_list[0] == "SEND_TO_GROUP")	:
     			self.send_to_group(my_input_list) 
@@ -70,24 +77,86 @@ class Client:
 
 
 
-    		self.send(my_input)
-
     		
+
+    def recieve_message(self ):
+    	msg=""
+    	msg_length=self.client.recv(HEADER).decode(FORMAT)
+    	if msg_length :
+    		msg_length=int(msg_length)	
+    		msg=self.client.recv(msg_length).decode(FORMAT)	
+			
+    	return msg
+		
+
+
     def create_user(self,command_list):
-    	print(command_list)
+
+    	msg=self.recieve_message()
+    	print(msg)	
+    	print("\n")
 
     def login_user(self,command_list):
-    	print(command_list)
+    	msg=self.recieve_message()
+    	print(msg)
+    	if(msg=="True") :
+    		self.current_userid = command_list[1]
+    		self.isLoggedIn=True
+    		print(f"{command_list[1]} logged in succesfully ")
+    	else :
+    		print("Invalid Credentials")
+    	print("\n")
+
     def create_group(self,command_list):
-    	print(command_list)
+
+    	if self.isLoggedIn == False :
+    		print("\n")
+    		print("Please Login First")
+    		print("\n")
+    	else :
+    		send_msg=command_list[0]+" "+ self.current_userid+" "+command_list[1]
+    		self.send(send_msg)
+    		msg=self.recieve_message()
+    		
+    		if(msg=="True") :
+    			
+    			print(f"{command_list[1]} group created succesfully ")
+    		
+    		else :
+    			print("Group exists! Please use JOIN command to join the group")
+    	
+    		print("\n")
+    	
+    		
+    		    	
+
     def join_group(self,command_list):
-    	print(command_list)
+    	if self.isLoggedIn == False :
+    		print("\n")
+    		print("Please Login First")
+    		print("\n")
+    	else :
+    		send_msg=command_list[0]+" "+ self.current_userid+" "+command_list[1]
+    		self.send(send_msg)
+    		msg=self.recieve_message()
+    		
+    		if(msg=="True") :
+    			
+    			print(f"{self.current_userid} joined group {command_list[1]} succesfully ")
+    		
+    		else :
+    			print("Invalid command")
+    	
+    		print("\n")
 
     def send_message(self,command_list):
     	print(command_list)
 
     def list_group(self,command_list):
-    	print(command_list)
+    	print(" group list ")
+    	msg=self.recieve_message()
+    	print(msg)
+
     def send_to_group(self,command_list):
     	print(command_list)	
     	

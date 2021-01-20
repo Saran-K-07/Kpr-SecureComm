@@ -1,3 +1,4 @@
+
 class user:
     def __init__(self,name,username,password,curr_ip,curr_port):
         self.name=name
@@ -9,27 +10,19 @@ class user:
         # self.isOnline=False          #boolean to denote user is online or not
 
     #Function to return user's ip and port
-    def getIpPort(self,username):
+    def getIpPort(self):
         return self.curr_ip,self.curr_port
 
     #function receives username,password and dictionary of users: {'username':'password'}
     #returns 1: userid password matches, 0 if userid matches but wrong password, -1 if user doesn't exist
-    def signIn(self,username,password,userDict):
-        foundFlag=0
-        for user in userDict:
-            if user==username:
-                foundFlag=1
-                if userDict[user]==password:
-                    
-                    #isOnline=True
-                    print("User logged in successfully!")
-                    return 1
-                else:
-                    print("UserId and Password doesn't match")
-                    return 0
-        if foundFlag==0:
-            print("Account doesn't exist. Please sign up first")
-            return -1
+    def signIn(self,username,password) :
+        if self.password == password and self.username == username :
+            return True
+        else :
+            return False
+            
+
+        
     
     # #Function to log user out of chat application
     # def signOut(self):
@@ -43,27 +36,14 @@ class user:
             for group in groupList:
                 print(group)
 
-    #Function to create group
-    def createGroup(self,groupName,allGroups):
-        if groupName in allGroups:
-            sys.stderr.write("Group already exists.")
-            if group in groupList:
-                sys.stderr.write("And you are already part of it")
-            else:
-                ans= input("Do you want to join this group? [Y/N]")
-                if ans=="Y":
-                    joinGroup(groupName,allGroups)
-                else:
-                    return
-        groupName.append(groupName)
-        allGroups.append(groupName)
-        return allGroups
     
     #Function to join group
-    def joinGroup(self,groupName,allGroups):
-        if groupName not in allGroups:
-            sys.stderr.write("Group doesn't exist. Creating group:"+groupName)
-            createGroup(groupName,allGroups)
+    def joinGroup(self,groupName):
+        if groupName not in self.groupList :
+            self.groupList.append(groupName)
+
+       
+
     
     #def broadcast a msg/file to a group
     def broadcastToGroup(self,messageObj, groupName):
