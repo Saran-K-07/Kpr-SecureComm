@@ -150,6 +150,14 @@ class Client:
     		print("\n")
 
     def send_message(self,command_list):
+        #check if we have to send file or not 
+        #get the user info from server
+        #create client as a sever
+        #send message from p2p
+        #if message is type of file then create a function to send file
+
+
+
     	print(command_list)
 
     def list_group(self,command_list):
@@ -158,7 +166,16 @@ class Client:
     	print(msg)
 
     def send_to_group(self,command_list):
+
+        #multiple groups can be there so extract the group names
+        #for each group extract the each member info (user id ,ip ,port )
+        #for each user  in each group use send message to send message
+
     	print(command_list)	
+
+    def clientAsserver(self) :
+        pass
+
     	
     def send(self,msg) :
     	message = msg.encode(FORMAT)
