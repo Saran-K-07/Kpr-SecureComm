@@ -1,12 +1,16 @@
 class user:
-    def __init__(self,name,username,password,curr_ip,curr_pass):
+    def __init__(self,name,username,password,curr_ip,curr_port):
         self.name=name
         self.username=username      #name appended wih roll no. so username will be unique for every user
         self.password=password
         self.curr_ip=curr_ip
-        self.curr_pass=curr_pass
+        self.curr_port=curr_port
         self.groupList=[]            #list of group names this user is part of
         # self.isOnline=False          #boolean to denote user is online or not
+
+    #Function to return user's ip and port
+    def getIpPort(self,username):
+        return self.curr_ip,self.curr_port
 
     #function receives username,password and dictionary of users: {'username':'password'}
     #returns 1: userid password matches, 0 if userid matches but wrong password, -1 if user doesn't exist
