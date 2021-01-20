@@ -48,7 +48,7 @@ class user:
             else:
                 ans= input("Do you want to join this group? [Y/N]")
                 if ans=="Y":
-                    joinGroup(groupName)
+                    joinGroup(groupName,allGroups)
                 else:
                     return
         groupName.append(groupName)
