@@ -25,8 +25,7 @@ class Client:
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    #socket object on client side
         self.client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  
         self.current_userid=""
-        thread=threading.Thread(target=self.listen_client)
-        thread.start()
+        
 
     def connectToServer(self):
         try:
@@ -36,6 +35,8 @@ class Client:
             print(str(e))
             sys.exit()
         self.shared_key_server()
+        thread=threading.Thread(target=self.listen_client)
+        thread.start()
         
 
     def operate(self):
@@ -89,11 +90,11 @@ class Client:
     def recieve_message(self,cli=None):
         if cli==None:
             cli=self.client
-            msg=""
-            msg_length=cli.recv(HEADER).decode(FORMAT)   #get length of  msg to receive by using initial buffer size of header=64B
-            if msg_length :
-                msg_length=int(msg_length)	                    #convert length to int as it was received in utf-8 format
-                msg=cli.recv(msg_length).decode(FORMAT)	 #reset buffer size to received msg length size and receive msg
+        msg=""
+        msg_length=cli.recv(HEADER).decode(FORMAT)   #get length of  msg to receive by using initial buffer size of header=64B
+        if msg_length :
+            msg_length=int(msg_length)	                    #convert length to int as it was received in utf-8 format
+            msg=cli.recv(msg_length).decode(FORMAT)	 #reset buffer size to received msg length size and receive msg
 
         return msg
 
@@ -101,12 +102,12 @@ class Client:
     def recieve_message_decrypt(self,key,cli=None):
         if cli==None:
             cli=self.client
-            msg=""
-            msg_length=cli.recv(HEADER).decode(FORMAT)   #get length of  msg to receive by using initial buffer size of header=64B
-            if msg_length :
-                msg_length=int(msg_length)                      #convert length to int as it was received in utf-8 format
-                msg=cli.recv(msg_length)  #reset buffer size to received msg length size and receive msg
-                msg=DES(key).decryption(msg)
+        msg=""
+        msg_length=cli.recv(HEADER).decode(FORMAT)   #get length of  msg to receive by using initial buffer size of header=64B
+        if msg_length :
+            msg_length=int(msg_length)                      #convert length to int as it was received in utf-8 format
+            msg=cli.recv(msg_length)  #reset buffer size to received msg length size and receive msg
+            msg=DES(key).decryption(msg)
         return msg
 
 
@@ -207,7 +208,7 @@ class Client:
         
         self.send(self.user_key_pair.imd_key,cli_server)
         sk=self.recieve_message(cli_server)
-        sk=Diffie_Hellman(user_key_pair.private_key).create_shared_key(sk)
+        sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
         print(f"Key:{sk}")
         self.encrypted_send(command_list[2],sk,cli_server)
         
@@ -252,7 +253,10 @@ class Client:
         sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
         print(f"Key:{sk}")
         self.user_key_pair.set_server_key(sk)
-
+        ip_port=self.recieve_message()
+        ip=ip_port.split()[0]
+        port=int(ip_port.split()[1])
+        self.CLI_ADDR=(ip,port)
 
     def encrypted_send(self,msg,key,cli=None):
         if cli==None:
@@ -267,13 +271,15 @@ class Client:
 
     def listen_client(self):
         try:
-            CLI_ADDR=self.client.getsockname()
+            
+            print(self.CLI_ADDR)
             cli_server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             cli_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
-            cli_server.bind(CLI_ADDR)            
+            cli_server.bind(self.CLI_ADDR)            
         except socket.error as e:
             print(str(e))
         print("//////////////////SERVER STARTED///////////")
+
         cli_server.listen(5)
         while True : 
 
@@ -285,9 +291,9 @@ class Client:
 
     def handle_client(self,conn,address):
         msg=self.recieve_message(conn)            
-        sk=Diffie_Hellman(self.private_key).create_shared_key(msg)
+        sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(msg)
         print(f"Key:{sk}")        
-        self.send(self.imd_key,conn)
+        self.send(self.user_key_pair.imd_key,conn)
         msg=self.recieve_message_decrypt(sk,conn)
         print(f"->{msg}")
 

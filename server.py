@@ -3,7 +3,7 @@ import threading
 from user import user
 import random
 from security import Diffie_Hellman,DES
-
+import hashlib
 
 PORT = 5051 
 
@@ -58,7 +58,7 @@ class Server :
 		pri_key=pri_key[:11]
 		pri_key=int(pri_key,16)
 		return pri_key
-		
+
 	def server_start(self):
 
 		try:
@@ -86,6 +86,8 @@ class Server :
 		print(f"Key:{sk}")
 		
 		self.send(self.imd_key,conn)
+		msg=address[0]+" "+str(address[1])
+		self.send(msg,conn)
 		self.shared_key[address[1]]=sk
 		while connected :
 			msg_length=conn.recv(HEADER).decode(FORMAT)               #receive size of msg from client to handle (put in buffer size of HEADER(64 B))
