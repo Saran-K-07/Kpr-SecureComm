@@ -1,18 +1,20 @@
 import socket
 import threading
 from user import user
+import random
+from security import Diffie_Hellman,DES
 
-PORT = 5050 
+
+PORT = 5051 
 
 SERVER = "127.0.0.2"
 HEADER = 64
 # SERVER = socket.gethostbyname(socket.gethostname())
 # ADDR = (SERVER,PORT)
 FORMAT = "utf-8"
-# server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
 DISCONNECT_MESSAGE="!DISCONNECT"
 
-# server.bind(ADDR)
 
 
 #group class contains a group_id and a list of users who are part of it
@@ -42,8 +44,21 @@ class Server :
 		self.ADDR=(self.IP,self.PORT)  #tuple of server ip and server address
 		self.user_dict={}              #dictionary of user id to user object
 		self.group_dict={}             #dictionary of groupids to list of user objects
+		self.private_key=self.get_privatekey()
+		self.imd_key=Diffie_Hellman(self.private_key).intermediate_key
+		self.shared_key={}
 
-
+	def get_privatekey(self):
+		roll_no=2020202019
+		pri_key=random.getrandbits(192)
+		pri_key+=roll_no
+		pri_key=str(pri_key)
+		pri_key=hashlib.sha256(pri_key.encode())
+		pri_key=pri_key.hexdigest()		
+		pri_key=pri_key[:11]
+		pri_key=int(pri_key,16)
+		return pri_key
+		
 	def server_start(self):
 
 		try:
@@ -64,15 +79,24 @@ class Server :
 	def handle_client(self,conn,address) :
 		print(f"[NEW CONNECTION] {conn,address} connected ")
 		connected=True
+		msg_length=conn.recv(HEADER).decode(FORMAT)
+		msg_length=int(msg_length)	                          #extract msg length to receive
+		msg=conn.recv(msg_length)
+		sk=Diffie_Hellman(self.private_key).create_shared_key(msg)
+		print(f"Key:{sk}")
+		
+		self.send(self.imd_key,conn)
+		self.shared_key[address[1]]=sk
 		while connected :
 			msg_length=conn.recv(HEADER).decode(FORMAT)               #receive size of msg from client to handle (put in buffer size of HEADER(64 B))
 			if msg_length :
 				msg_length=int(msg_length)	                          #extract msg length to receive
-				msg=conn.recv(msg_length).decode(FORMAT)              #set this as new buffer size to recieve actual message
+				msg=conn.recv(msg_length)              #set this as new buffer size to recieve actual message
+				msg=DES(self.shared_key[address[1]]).decryption(msg)
 				if msg == DISCONNECT_MESSAGE :
 					connected=False
 
-				msg_list=msg.split()
+				msg_list=msg.split(" ")
 				print(f"[{address}] {msg_list}")
 
 
@@ -81,7 +105,7 @@ class Server :
 
 					if(len(msg_list) != 4 ):
 						msg="Error : Please provide proper args"
-						self.send(msg,conn)
+						self.send_encrypted(msg,conn,address)
 
 					else :
 
@@ -89,14 +113,14 @@ class Server :
 						self.user_dict[msg_list[2]] = new_user                                      #adding user to server's list
 						print("checking new user ",new_user.getIpPort())
 						msg="user created succesfully"
-						self.send(msg,conn)
+						self.send_encrypted(msg,conn,address)
 
 				elif msg_list[0] =="LOGIN" :                       #command received= ['LOGIN','username','password']
 
 					if(len(msg_list) != 3 ):
 						# print()
 						msg="Error : Please provide proper args"
-						self.send(msg,conn)
+						self.send_encrypted(msg,conn,address)
 					else :
 
 						
@@ -113,42 +137,56 @@ class Server :
 
 								print("Logged In succesfully ")
 								msg="True"
-								self.send(msg,conn)
+								self.send_encrypted(msg,conn,address)
 
 							else :
 								
 								msg="False"
-								self.send(msg,conn)
+								self.send_encrypted(msg,conn,address)
 
 						except :
 							msg="False"
-							self.send(msg,conn)
+							self.send_encrypted(msg,conn,address)
 						
 								
-				elif msg_list[0] == "SEND" :                     #command received= ['SEND','username','msg']
-					print("Please send the message")              #or ['SEND', 'username', 'filename','file']
+				elif msg_list[0] == "SEND" :                     #command received= ['SEND','username','sender']
+					print("Please send the message")			
+					             
+					if len(msg_list) != 3 :
+						
+						msg="False"
+						self.send_encrypted(msg,conn,address)
+					elif  len(msg_list) == 3:
+						
+						addr=self.user_dict[msg_list[2]].getIpPort()
+						print(addr)
+						
+						msg=str(addr[0])+" "+ str(addr[1])
+						print(msg)
+						self.send_encrypted(msg,conn,address)
+
 
 
 				elif msg_list[0] == "JOIN" :                     #command received= ['JOIN','username','groupname']
 					print("Please JOIN the group")
 					if len(msg_list) != 3 :
 						msg="False"
-						self.send(msg,conn)
+						self.send_encrypted(msg,conn,address)
 					else :
-						if msg_list[2] not in group_dict:
-							self.create_group(msg_list[2],msg_list[1],conn)
+						if msg_list[2] not in self.group_dict:
+							self.create_group(msg_list[2],msg_list[1],conn,address)
 						else :
 							self.group_dict[msg_list[2]].add_member(msg_list[1])    #add user to group object's list
 							self.user_dict[msg_list[1]].joinGroup(msg_list[2])      #add groupname to user class' grouplist
 							msg="True"
-							self.send(msg,conn)
+							self.send_encrypted(msg,conn,address)
 
 				elif msg_list[0] == "CREATE" :                  #command received= ['CREATE','username''groupname']  
 					if len(msg_list) != 3 :
 						msg="False"
-						self.send(msg,conn)
+						self.send_encrypted(msg,conn,address)
 					else :
-						self.create_group(msg_list[2],msg_list[1],conn)
+						self.create_group(msg_list[2],msg_list[1],conn,address)
 
 					
 				elif msg_list[0] == "LIST" :                     #command received=['LIST']
@@ -158,24 +196,25 @@ class Server :
 						msg = "NO GROUPS"
 					else :
 						msg=' '.join(groups)
-					self.send(msg,conn)
+					self.send_encrypted(msg,conn,address)
 
 		conn.close()	                                         #closing the connection with a client
 
-	def create_group(self,grp,user_id,conn):
+	def create_group(self,grp,user_id,conn,address):
 		if grp in self.group_dict.keys() :
 			msg="False"
-			self.send(msg,conn)
+			self.send_encrypted(msg,conn,address)
 		else :
 			self.group_dict[grp]=Group(grp)                  #put newly created group object in server's group dictionary
 			self.group_dict[grp].add_member(user_id)         #add user to group object's list
 			self.user_dict[user_id].joinGroup(grp)			 #add groupname to user class' grouplist
 			msg="True"
-			self.send(msg,conn)
+			self.send_encrypted(msg,conn,address)
 
 						
 	#Function to send message from server to client on port->contained in "connection" variable				
 	def send(self,msg,connection) :
+		msg=str(msg)
 		message = msg.encode(FORMAT)                     #encode msg in utf-8
 		msg_length = len(message)                        #extract length of msg
 		send_length = str(msg_length).encode(FORMAT)     #encode length to send before sending actual msg
@@ -183,7 +222,14 @@ class Server :
 		connection.send(send_length)                     #send length
 		connection.send(message)						 #send message
 
-    	
+	def send_encrypted(self,msg,connection,address):
+		msg=str(msg)
+		message=DES(self.shared_key[address[1]]).encryption(msg)                  
+		msg_length = len(message)                        #extract length of msg
+		send_length = str(msg_length).encode(FORMAT)     #encode length to send before sending actual msg
+		send_length += b' ' * (HEADER -len(send_length)) #pad it to fit the initial buffer size=HEADER (64B)
+		connection.send(send_length)                     #send length
+		connection.send(message)	
     	
    
 
