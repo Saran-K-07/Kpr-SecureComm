@@ -30,6 +30,8 @@ class Group :
 		self.users_list.add(user_id)
 	def no_of_members(self) :
 		return len(self.users_list)
+	def members_list(self):
+		return self.users_list
 
 		
 		
@@ -90,8 +92,10 @@ class Server :
 		self.send(msg,conn)
 		self.shared_key[address[1]]=sk
 		while connected :
-			msg_length=conn.recv(HEADER).decode(FORMAT)               #receive size of msg from client to handle (put in buffer size of HEADER(64 B))
+			msg_length=conn.recv(HEADER).decode(FORMAT)              #receive size of msg from client to handle (put in buffer size of HEADER(64 B))
+			
 			if msg_length :
+				
 				msg_length=int(msg_length)	                          #extract msg length to receive
 				msg=conn.recv(msg_length)              #set this as new buffer size to recieve actual message
 				msg=DES(self.shared_key[address[1]]).decryption(msg)
@@ -154,18 +158,40 @@ class Server :
 				elif msg_list[0] == "SEND" :                     #command received= ['SEND','username','sender']
 					print("Please send the message")			
 					             
-					if len(msg_list) != 3 :
+					if len(msg_list) != 3:
 						
 						msg="False"
 						self.send_encrypted(msg,conn,address)
 					elif  len(msg_list) == 3:
 						
 						addr=self.user_dict[msg_list[2]].getIpPort()
-						print(addr)
+						# print(addr)
 						
 						msg=str(addr[0])+" "+ str(addr[1])
-						print(msg)
+						# print(msg)
 						self.send_encrypted(msg,conn,address)
+
+
+
+
+				elif msg_list[0] == "SEND_TO_GROUP" :                     #command received= ['SEND_TO_GROUP','username','groupname']
+					print("Please send the message")			
+					             
+					if len(msg_list) != 3 :						
+						msg="False"
+						self.send_encrypted(msg,conn,address)
+					elif  len(msg_list) == 3:
+						no_members=self.group_dict[msg_list[2]].no_of_members()
+						
+						self.send_encrypted(no_members,conn,address)
+						list_member=self.group_dict[msg_list[2]].members_list()
+						for i in list_member:
+							if i!=msg_list[1]:
+								addr=self.user_dict[i].getIpPort()
+								# print(addr)						
+								msg=str(addr[0])+" "+ str(addr[1])
+								# print(msg)
+								self.send_encrypted(msg,conn,address)
 
 
 

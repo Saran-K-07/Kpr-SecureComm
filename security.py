@@ -16,7 +16,7 @@ class Diffie_Hellman:
 		self.private_key=pri_key
 		self.intermediate_key=self.create_intermediate_key()
 	
-		
+
 	def create_intermediate_key(self):
 		intermediate_key=pow(self.exp_pub,self.private_key,self.mod_pub)
 		return intermediate_key
@@ -60,8 +60,8 @@ class DES:
 		return cipher_text
 
 	def decryption(self,data):
-		
-		plain_text=self.key1.decrypt(data, padding=True)
+				
+		plain_text=self.key1.decrypt(data, padding=True)			
 		return plain_text.decode(FORMAT)
 
 
