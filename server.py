@@ -156,14 +156,15 @@ class Server :
 							self.send_encrypted(msg,conn,address)
 						
 								
-				elif msg_list[0] == "SEND" :                     #command received= ['SEND','username','sender']
+				elif msg_list[0] == "SEND" :                     #command received= ['SEND','sender','receiver']
 					print("Please send the message")			
-					             
-					if len(msg_list) != 3:
+					            
+					if len(msg_list) != 3:#     or #check receiver hai ki nahi
 						
 						msg="False"
 						self.send_encrypted(msg,conn,address)
 					elif  len(msg_list) == 3:
+						
 						
 						addr=self.user_dict[msg_list[2]].getIpPort()
 						# print(addr)
@@ -221,11 +222,11 @@ class Server :
 				elif msg_list[0] == "LIST" :                     #command received=['LIST']
 					groups= list(self.group_dict.keys())
 					print("groups ",groups)
-					if len(groups) == 0:
-						msg = "NO GROUPS"
-					else :
-						msg=' '.join(groups)
+					msg=len(groups)
 					self.send_encrypted(msg,conn,address)
+					for i in groups:
+						msg=str(i)+":"+str(self.group_dict[i].no_of_members())
+						self.send_encrypted(msg,conn,address)
 
 		conn.close()	                                         #closing the connection with a client
 

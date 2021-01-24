@@ -25,7 +25,7 @@ class Client:
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    #socket object on client side
         self.client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  
         self.current_userid=""
-        
+        self.my_group_list= set()
 
     def connectToServer(self):
         try:
@@ -159,6 +159,7 @@ class Client:
 
             else :
                 print(f"{command_list[1]} group created succesfully ")
+                self.my_group_list.add(command_list[1])
                 self.user_key_pair.joingroup(command_list[1],msg)
             	
         print("\n")
@@ -182,6 +183,7 @@ class Client:
             else :
 
                 print(f"{self.current_userid} joined group {command_list[1]} succesfully ")
+                self.my_group_list.add(command_list[1])
                 self.user_key_pair.joingroup(command_list[1],msg)
                 
 
@@ -250,12 +252,14 @@ class Client:
             self.send(self.user_key_pair.imd_key,cli_server)
             sk=self.recieve_message(cli_server)
             sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
+            message=self.current_userid+" : "+message
             # print(f"Key:{sk}")
         else:
             msg="GROUP "+group
             self.send(msg,cli_server)
             sk=self.user_key_pair.groups[group]
             sk=int(sk)
+            message=self.current_userid+"->"+group+":"+message
         self.encrypted_send(message,sk,cli_server)
 
 
@@ -275,12 +279,13 @@ class Client:
             sk=self.recieve_message(cli_server)
             sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
             # print(f"Key:{sk}")
+            msg_type=self.current_userid+" : FILE= "+filename
         else:
             msg="GROUP "+group
             self.send(msg,cli_server)
             sk=self.user_key_pair.groups[group]
             sk=int(sk)
-        msg_type="FILE"
+        msg_type=self.current_userid+"->"+group+":"+"FILE= "+filename
         self.encrypted_send(msg_type,sk,cli_server)
         self.encrypted_send(filename,sk,cli_server)
         try:
@@ -304,9 +309,17 @@ class Client:
     	
 
     def list_group(self,command_list):
-    	print(" group list ")
-    	msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-    	print(msg)
+    	#print(" group list ")
+        msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
+        group_len=int(msg)
+        if group_len==0:
+            print("NO GROUPS")
+        else:
+            print("GROUP LIST:")
+            for i in range(0,group_len):
+                msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
+                print(msg)
+                
 
 
 
@@ -316,20 +329,56 @@ class Client:
 
 
     def send_to_group(self,command_list):
+        print()
+        print()
+        print("command list=", command_list)
+        print()
+        print()
         #multiple groups can be there so extract the group names
         #for each group extract the each member info (user id ,ip ,port )
         #for each user  in each group use send message to send message
-        if(len(command_list)==3):
-            self.send_to_group_msg(command_list)
+        if(len(command_list)<3):
+            print("Invalid command")
         else:
-            self.send_to_group_file(command_list)
+            if command_list[1]=="FILE":
+                print("file wale mein")
+                groupnames=command_list[2:-1]
+                message=command_list[-1]
+                for i in groupnames:
+                    if i not in self.my_group_list:
+                        print("User not part of group: "+i)
+                    else:
+                        temp_list=command_list[0:2]
+                        temp_list.append(i)
+                        temp_list.append(message)
+                        print("temp_list=",temp_list)
+                        temp_str=' '.join(temp_list)
+                        print("temp_str=",temp_str)
+                        thread2=threading.Thread(target=self.send_to_group_file,args=(temp_str,))
+                        thread2.start()
+                        thread2.join()
+            else:
+                groupnames=command_list[1:-1]
+                message=command_list[-1]
+                for i in groupnames:
+                    if i not in self.my_group_list:
+                        print("User not part of group: "+i)
+                    else:
+                        temp_list=command_list[0:1]
+                        temp_list.append(i)
+                        temp_list.append(message)
+                        print("temp_list=",temp_list)
+                        temp_str=' '.join(temp_list)
+                        print("temp_str=",temp_str)
+                        thread3=threading.Thread(target=self.send_to_group_msg,args=(temp_str,))
+                        thread3.start()
+                        thread3.join()
 
 
 
 
-
-
-    def send_to_group_msg(self,command_list):
+    def send_to_group_msg(self,command_str):
+        command_list=command_str.split(" ")
         send_msg=command_list[0]+" "+ self.current_userid+" "+ command_list[1]
 
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
@@ -348,7 +397,8 @@ class Client:
             thread1.join()
         # print(command_list)	
 
-    def send_to_group_file(self,command_list):
+    def send_to_group_file(self,command_str):
+        command_list=command_str.split(" ")
         send_msg=command_list[0]+" "+ self.current_userid+" "+ command_list[2]
 
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
@@ -438,9 +488,13 @@ class Client:
             # print(f"Key:{sk}")        
             self.send(self.user_key_pair.imd_key,conn)
         msg=self.recieve_message_decrypt(sk,conn)
-        if msg=="FILE":
+        msg_temp=msg.split(',')
+        if msg_temp[0]=="FILE":
+            print(f"->{msg_temp[1]}:{msg_temp[0]}")
             self.handle_client_file(conn,sk)
-        print(f"->{msg}")
+
+        else:
+            print(f"->{msg}")
         print()
         print()
 
@@ -448,7 +502,7 @@ class Client:
         
         file_name=self.recieve_message_decrypt(sk,conn)
         file_data=self.recieve_message_decrypt(sk,conn,1)   
-        print(f"->{file_name} received")
+        #print(f"->{file_name} received")
         file_name1=file_name.split(".")
         file_name1=file_name1[0]+str(self.CLI_ADDR)+"."+file_name1[1]
         fd=open(file_name1,"wb")
