@@ -22,6 +22,7 @@ class Group :
 	def __init__(self,id):
 		self.group_id = id
 		self.users_list=set()
+		self.key=random.getrandbits(192)
 
 	def show_members(self) :
 		print(self.group_id," : ",self.users_list)
@@ -205,8 +206,8 @@ class Server :
 							self.create_group(msg_list[2],msg_list[1],conn,address)
 						else :
 							self.group_dict[msg_list[2]].add_member(msg_list[1])    #add user to group object's list
-							self.user_dict[msg_list[1]].joinGroup(msg_list[2])      #add groupname to user class' grouplist
-							msg="True"
+							self.user_dict[msg_list[1]].joinGroup(msg_list[2],self.group_dict[msg_list[2]].key)      #add groupname to user class' grouplist
+							msg=self.group_dict[msg_list[2]].key
 							self.send_encrypted(msg,conn,address)
 
 				elif msg_list[0] == "CREATE" :                  #command received= ['CREATE','username''groupname']  
@@ -235,8 +236,8 @@ class Server :
 		else :
 			self.group_dict[grp]=Group(grp)                  #put newly created group object in server's group dictionary
 			self.group_dict[grp].add_member(user_id)         #add user to group object's list
-			self.user_dict[user_id].joinGroup(grp)			 #add groupname to user class' grouplist
-			msg="True"
+			self.user_dict[user_id].joinGroup(grp,self.group_dict[grp].key)			 #add groupname to user class' grouplist
+			msg=self.group_dict[grp].key
 			self.send_encrypted(msg,conn,address)
 
 						

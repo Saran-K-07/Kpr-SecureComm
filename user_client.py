@@ -9,7 +9,8 @@ class user_client:
 		self.username=username      #name appended wih roll no. so username will be unique for every user
 		self.private_key=self.get_privatekey()
 		self.imd_key=Diffie_Hellman(self.private_key).intermediate_key
-	    
+		self.groups={}
+
 
 	def get_privatekey(self):
 		pri_key=random.getrandbits(192)
@@ -19,9 +20,13 @@ class user_client:
 		pri_key=pri_key.hexdigest()		
 		pri_key=pri_key[:11]
 		pri_key=int(pri_key,16)
-
-
 		return pri_key
+
+	def joingroup(self,groupname,key):
+		self.groups[groupname]=key
+
+
+		
 
 
 

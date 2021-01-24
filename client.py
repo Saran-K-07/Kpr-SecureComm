@@ -100,7 +100,7 @@ class Client:
         return msg
 
 
-    def recieve_message_decrypt(self,key,cli=None):
+    def recieve_message_decrypt(self,key,cli=None,file=None):
         if cli==None:
             cli=self.client
         msg=""
@@ -108,7 +108,10 @@ class Client:
         if msg_length :
             msg_length=int(msg_length)                      #convert length to int as it was received in utf-8 format
             msg=cli.recv(msg_length)  #reset buffer size to received msg length size and receive msg
-            msg=DES(key).decryption(msg)
+            if file==None:
+                msg=DES(key).decryption(msg)
+            else:
+                msg=DES(key).decryption(msg,1)
         return msg
 
 
@@ -140,24 +143,26 @@ class Client:
 
     def create_group(self,command_list):
 
-    	if self.isLoggedIn == False :
-    		print("\n")
-    		print("Please Login First")
-    		print("\n")
-    	else :
-    		send_msg=command_list[0]+" "+ self.current_userid+" "+command_list[1]
-    		self.encrypted_send(send_msg,self.user_key_pair.server_key)
-    		msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-    		
-    		if(msg=="True") :
-    			
-    			print(f"{command_list[1]} group created succesfully ")
-    		
-    		else :
-    			print("Group exists! Please use JOIN command to join the group")
-    	
-    		print("\n")
-    	
+        if self.isLoggedIn == False :
+            print("\n")
+            print("Please Login First")
+            print("\n")
+        else :
+            send_msg=command_list[0]+" "+ self.current_userid+" "+command_list[1]
+            self.encrypted_send(send_msg,self.user_key_pair.server_key)
+            msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
+
+            if(msg=="False") :
+                print("Group exists! Please use JOIN command to join the group")
+            		
+            	
+
+            else :
+                print(f"{command_list[1]} group created succesfully ")
+                self.user_key_pair.joingroup(command_list[1],msg)
+            	
+        print("\n")
+	
     		
     		    	
 
@@ -171,12 +176,14 @@ class Client:
             self.encrypted_send(send_msg,self.user_key_pair.server_key)    		
             msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
 
-            if(msg=="True") :
-
-                print(f"{self.current_userid} joined group {command_list[1]} succesfully ")
+            if(msg=="False") :
+                print("Invalid command")
 
             else :
-                print("Invalid command")
+
+                print(f"{self.current_userid} joined group {command_list[1]} succesfully ")
+                self.user_key_pair.joingroup(command_list[1],msg)
+                
 
         print("\n")
 
@@ -228,7 +235,7 @@ class Client:
 
 
 
-    def send_message_data(self,ip,port,message):
+    def send_message_data(self,ip,port,message,group=None):
         cli_server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cli_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:                       
@@ -239,15 +246,20 @@ class Client:
         except socket.error as e:
             print(str(e))
             sys.exit()
-        
-        self.send(self.user_key_pair.imd_key,cli_server)
-        sk=self.recieve_message(cli_server)
-        sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
-        # print(f"Key:{sk}")
+        if group==None:
+            self.send(self.user_key_pair.imd_key,cli_server)
+            sk=self.recieve_message(cli_server)
+            sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
+            # print(f"Key:{sk}")
+        else:
+            msg="GROUP "+group
+            self.send(msg,cli_server)
+            sk=self.user_key_pair.groups[group]
+            sk=int(sk)
         self.encrypted_send(message,sk,cli_server)
 
 
-    def send_message_filedata(self,ip,port,filename):
+    def send_message_filedata(self,ip,port,filename,group=None):
         cli_server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cli_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:                       
@@ -258,20 +270,25 @@ class Client:
         except socket.error as e:
             print(str(e))
             sys.exit()
-        
-        self.send(self.user_key_pair.imd_key,cli_server)
-        sk=self.recieve_message(cli_server)
-        sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
-        # print(f"Key:{sk}")
+        if group==None:
+            self.send(self.user_key_pair.imd_key,cli_server)
+            sk=self.recieve_message(cli_server)
+            sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
+            # print(f"Key:{sk}")
+        else:
+            msg="GROUP "+group
+            self.send(msg,cli_server)
+            sk=self.user_key_pair.groups[group]
+            sk=int(sk)
         msg_type="FILE"
         self.encrypted_send(msg_type,sk,cli_server)
         self.encrypted_send(filename,sk,cli_server)
         try:
             
-            fd=open(filename,"r")
+            fd=open(filename,"rb")
             filedata=fd.read()    
             fd.close()
-            self.encrypted_send(filedata,sk,cli_server)
+            self.encrypted_send(filedata,sk,cli_server,1)
             
             
         except FileNotFoundError as f:
@@ -326,7 +343,7 @@ class Client:
             ip=msg.split(" ")[0]
             port=int(msg.split(" ")[1])
 
-            thread1=threading.Thread(target=self.send_message_data,args=(ip,port,command_list[2]))
+            thread1=threading.Thread(target=self.send_message_data,args=(ip,port,command_list[2],command_list[1]))
             thread1.start()
             thread1.join()
         # print(command_list)	
@@ -345,7 +362,7 @@ class Client:
             ip=msg.split(" ")[0]
             port=int(msg.split(" ")[1])
 
-            thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,command_list[3]))
+            thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,command_list[3],command_list[2]))
             thread1.start()
             thread1.join()
         # print(command_list)
@@ -375,10 +392,13 @@ class Client:
         port=int(ip_port.split()[1])
         self.CLI_ADDR=(ip,port)
 
-    def encrypted_send(self,msg,key,cli=None):
+    def encrypted_send(self,msg,key,cli=None,File=None):
         if cli==None:
             cli=self.client
-        message=DES(key).encryption(msg)
+        if File==None:    
+            message=DES(key).encryption(msg)
+        else:
+            message=DES(key).encryption(msg,1)
         msg_length = len(message)
         send_length = str(msg_length).encode(FORMAT)                 
         send_length += b' ' * (HEADER -len(send_length))
@@ -408,10 +428,15 @@ class Client:
             
 
     def handle_client(self,conn,address):
-        msg=self.recieve_message(conn)            
-        sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(msg)
-        print(f"Key:{sk}")        
-        self.send(self.user_key_pair.imd_key,conn)
+        msg=self.recieve_message(conn)    
+        if msg.startswith("GROUP"):
+            sk=msg.split(" ")[1]
+            sk=self.user_key_pair.groups[sk]
+            sk=int(sk)
+        else:            
+            sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(msg)
+            # print(f"Key:{sk}")        
+            self.send(self.user_key_pair.imd_key,conn)
         msg=self.recieve_message_decrypt(sk,conn)
         if msg=="FILE":
             self.handle_client_file(conn,sk)
@@ -422,11 +447,11 @@ class Client:
     def handle_client_file(self,conn,sk):         
         
         file_name=self.recieve_message_decrypt(sk,conn)
-        file_data=self.recieve_message_decrypt(sk,conn)   
-        
+        file_data=self.recieve_message_decrypt(sk,conn,1)   
+        print(f"->{file_name} received")
         file_name1=file_name.split(".")
         file_name1=file_name1[0]+str(self.CLI_ADDR)+"."+file_name1[1]
-        fd=open(file_name1,"w")
+        fd=open(file_name1,"wb")
         fd.write(file_data)
         fd.close()
         print(f"->{file_name} received")

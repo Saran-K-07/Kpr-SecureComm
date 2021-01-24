@@ -1,8 +1,7 @@
 
 from des import DesKey
 
-# from Crypto.Cipher import DES3
-# from Crypto.Util.Padding import pad
+
 
 #pip install des
 FORMAT = "utf-8"
@@ -54,15 +53,18 @@ class DES:
 		self.key1=DesKey(self.key)
 		# print(self.key1.is_triple())
 
-	def encryption(self,data):
-		data=data.encode(FORMAT)
+	def encryption(self,data,file=None):
+		if file==None:
+			data=data.encode(FORMAT)
 		cipher_text=self.key1.encrypt(data, padding=True)
 		return cipher_text
 
-	def decryption(self,data):
+	def decryption(self,data,file=None):
 				
-		plain_text=self.key1.decrypt(data, padding=True)			
-		return plain_text.decode(FORMAT)
+		plain_text=self.key1.decrypt(data, padding=True)
+		if file==None:	
+			plain_text=plain_text.decode(FORMAT)		
+		return plain_text
 
 
 

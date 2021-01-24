@@ -7,6 +7,7 @@ class user:
         self.curr_ip=curr_ip
         self.curr_port=curr_port
         self.groupList=[]            #list of group names this user is part of
+        
         # self.isOnline=False          #boolean to denote user is online or not
 
     #Function to return user's ip and port
@@ -39,9 +40,9 @@ class user:
 
     
     #Function to join group
-    def joinGroup(self,groupName):
+    def joinGroup(self,groupName,key):
         if groupName not in self.groupList :
-            self.groupList.append(groupName)
+            self.groupList.append((groupName,key))
 
        
 
