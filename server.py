@@ -70,116 +70,98 @@ class Server :
 		except socket.error as e:
 			print(str(e))
 		self.server.listen(10)
-		print(f"[*] Starting server ({self.IP}) on port {self.PORT}")
+		self.print_cmd(f"[*] Starting server ({self.IP}) on port {self.PORT}")
 		while True :                                
 			connection,address=self.server.accept()         #accepting client socket, address(port) from client
 			thread=threading.Thread(target=self.handle_client,args=(connection,address))
 			thread.start()
 			print(f"[ACTIVE CONNECTIONS] {threading.activeCount()-1}")
 
+	def print_cmd(self,comment):
+		print("\033[96m {}\033[00m".format(comment))
 
 	#Function to handle client requests concurrently (one spawned for every client requesting a connection)
 	def handle_client(self,conn,address) :
-		print(f"[NEW CONNECTION] {conn,address} connected ")
-		connected=True
+		self.print_cmd(f"[NEW CONNECTION] {address} connected ")
 		msg_length=conn.recv(HEADER).decode(FORMAT)
 		msg_length=int(msg_length)	                          #extract msg length to receive
 		msg=conn.recv(msg_length)
 		sk=Diffie_Hellman(self.private_key).create_shared_key(msg)
-		print(f"Key:{sk}")
 		
 		self.send(self.imd_key,conn)
 		msg=address[0]+" "+str(address[1])
 		self.send(msg,conn)
 		self.shared_key[address[1]]=sk
+		connected=True
 		while connected :
 			msg_length=conn.recv(HEADER).decode(FORMAT)              #receive size of msg from client to handle (put in buffer size of HEADER(64 B))
 			
 			if msg_length :
-				
 				msg_length=int(msg_length)	                          #extract msg length to receive
 				msg=conn.recv(msg_length)              #set this as new buffer size to recieve actual message
 				msg=DES(self.shared_key[address[1]]).decryption(msg)
 				if msg == DISCONNECT_MESSAGE :
 					connected=False
-
 				msg_list=msg.split(" ")
-				print(f"[{address}] {msg_list}")
-
-
 
 				if msg_list[0] == "CREATE_USER" :                    #command received= ['CREATE_USER', 'name', 'username', 'password']
 
 					if(len(msg_list) != 4 ):
-						msg="Error : Please provide proper args"
+						msg="False"
 						self.send_encrypted(msg,conn,address)
 
 					else :
 
 						new_user = user(msg_list[1],msg_list[2],msg_list[3],address[0],address[1])  #creating user object by calling its constuctor
 						self.user_dict[msg_list[2]] = new_user                                      #adding user to server's list
-						print("checking new user ",new_user.getIpPort())
-						msg="user created succesfully"
+						self.print_cmd("checking new user created"+str(new_user.getIpPort()))
+						msg="True"
 						self.send_encrypted(msg,conn,address)
 
 				elif msg_list[0] =="LOGIN" :                       #command received= ['LOGIN','username','password']
 
 					if(len(msg_list) != 3 ):
-						# print()
-						msg="Error : Please provide proper args"
+						print("[LOGIN unsuccessful]")
+						msg="False"
 						self.send_encrypted(msg,conn,address)
-					else :
-
-						
+					else :			
 						username = msg_list[1]
 						password = msg_list[2]
 
 						try :
 
 							curr_user=self.user_dict[username]         #adding user to server's user list
-							print("curr_user ",curr_user)
 							login_status=curr_user.signIn(username,password)
-
 							if login_status == True :
-
-								print("Logged In succesfully ")
 								msg="True"
 								self.send_encrypted(msg,conn,address)
 
 							else :
-								
+								print("[LOGIN unsuccessful]")
 								msg="False"
 								self.send_encrypted(msg,conn,address)
-
 						except :
+							print("[LOGIN unsuccessful]")
 							msg="False"
 							self.send_encrypted(msg,conn,address)
 						
 								
 				elif msg_list[0] == "SEND" :                     #command received= ['SEND','sender','receiver']
-					print("Please send the message")			
-					            
-					if len(msg_list) != 3:#     or #check receiver hai ki nahi
-						
+					#self.print_cmd("Please send the message")           
+					if len(msg_list) != 3 or (msg_list[2] not in self.user_dict):
+						print("[SEND unsuccessful]")
 						msg="False"
 						self.send_encrypted(msg,conn,address)
 					elif  len(msg_list) == 3:
-						
-						
 						addr=self.user_dict[msg_list[2]].getIpPort()
-						# print(addr)
-						
 						msg=str(addr[0])+" "+ str(addr[1])
-						# print(msg)
 						self.send_encrypted(msg,conn,address)
 
-
-
-
 				elif msg_list[0] == "SEND_TO_GROUP" :                     #command received= ['SEND_TO_GROUP','username','groupname']
-					print("Please send the message")			
+					#print("Please send the message")			
 					             
-					if len(msg_list) != 3 :						
+					if len(msg_list) != 3 :
+						print("[SEND_TO_GROUP unsuccessful]")						
 						msg="False"
 						self.send_encrypted(msg,conn,address)
 					elif  len(msg_list) == 3:
@@ -189,17 +171,16 @@ class Server :
 						list_member=self.group_dict[msg_list[2]].members_list()
 						for i in list_member:
 							if i!=msg_list[1]:
-								addr=self.user_dict[i].getIpPort()
-								# print(addr)						
+								addr=self.user_dict[i].getIpPort()						
 								msg=str(addr[0])+" "+ str(addr[1])
-								# print(msg)
 								self.send_encrypted(msg,conn,address)
 
 
 
 				elif msg_list[0] == "JOIN" :                     #command received= ['JOIN','username','groupname']
-					print("Please JOIN the group")
+					#self.print_cmd("Please JOIN the group")
 					if len(msg_list) != 3 :
+						print("[JOIN unsuccessful]")
 						msg="False"
 						self.send_encrypted(msg,conn,address)
 					else :
@@ -213,6 +194,7 @@ class Server :
 
 				elif msg_list[0] == "CREATE" :                  #command received= ['CREATE','username''groupname']  
 					if len(msg_list) != 3 :
+						print("[CREATE unsuccessful]")
 						msg="False"
 						self.send_encrypted(msg,conn,address)
 					else :
@@ -232,6 +214,7 @@ class Server :
 
 	def create_group(self,grp,user_id,conn,address):
 		if grp in self.group_dict.keys() :
+			print("[CREATE_GROUP unsuccessful]")
 			msg="False"
 			self.send_encrypted(msg,conn,address)
 		else :

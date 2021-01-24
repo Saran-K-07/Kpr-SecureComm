@@ -38,27 +38,31 @@ class Client:
         thread=threading.Thread(target=self.listen_client)
         thread.start()
         
+    def print_error(self,comment):
+        print("\033[91m {}\033[00m".format(comment))
+        print()
+    
+    def print_msg(self,comment):
+        print("\033[93m {}\033[00m".format(comment))
+        print()
 
     def operate(self):
-
+        print("Please choose from one of the following commands")
+        print("CREATE_USER <NAME> <USER_NAME> <PASSWORD>")
+        print("LOGIN <USER_NAME> <PASSWORD>")
+        print("JOIN <GROUP_NAME> ")
+        print("CREATE <GROUP_NAME> ")
+        print("LIST")
+        print("SEND <USER_NAME> <MESSAGE>")
+        print("SEND_TO_GROUP <GROUP_NAME(S)> <MESSAGE>")
+        print("SEND FILE <USER_NAME> <FILENAME>")
+        print("SEND_TO_GROUP FILE <GROUP_NAME(S)> <FILENAME>")
+        print()
         quit=False
         while quit == False :
-            print("Please choose from one of the following commands")
-            print("CREATE_USER <NAME> <USER_NAME> <PASSWORD>")
-            print("LOGIN <USER_NAME> <PASSWORD>")
-            print("JOIN <GROUP_NAME> ")
-            print("CREATE <GROUP_NAME> ")
-            print("LIST")
-            print("SEND <USER_NAME> <MESSAGE>")
-            print("SEND_TO_GROUP <GROUP_NAME> <MESSAGE>")
-            print("SEND FILE <USER_NAME> <FILENAME>")
-            print("SEND_TO_GROUP FILE <GROUP_NAME> <FILENAME>")
-            print()
-
-
             my_input=input()
             my_input_list=my_input.split()
-            print("my_input_list " ,my_input_list)
+            print("my_input_list " ,my_input_list)   ##!!!!!!!!!!!!!REMEMBER TO COMMENT!!!
             if (len(my_input_list)!=0) :
                 if(my_input_list[0] == "CREATE_USER") :
                     self.encrypted_send(my_input,self.user_key_pair.server_key)
@@ -78,15 +82,9 @@ class Client:
                 elif(my_input_list[0] == "SEND_TO_GROUP")	:
                     self.send_to_group(my_input_list)
                 else:
-                    print("invalid command")
+                    self.print_error("Invalid command")
                     print()
 
-
-
-
-
-
-    		
 	#function to handle message received from others over a socket
     def recieve_message(self,cli=None):
         if cli==None:
@@ -115,127 +113,102 @@ class Client:
         return msg
 
 
-
-
-
     def create_user(self,command_list):
-
-    	msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-    	print(msg)	
-    	print("\n")
+        msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
+        if msg =="True":
+            self.print_msg("User logged in successfully")	
+        else:
+            self.print_error("Error: wrong number of arguments")
 
     def login_user(self,command_list):
     	msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
     	print(msg)
-    	if(msg=="True") :
+    	if msg=="True" :
     		self.current_userid = command_list[1]
     		self.isLoggedIn=True
-    		print(f"{command_list[1]} logged in succesfully ")
-
-            
+    		self.print_msg(str(command_list[1])+" logged in succesfully ")
     	else :
-    		print("Invalid Credentials")
-    	print("\n")
-
-
-
-
-
+    		self.print_error("Invalid Credentials")
     def create_group(self,command_list):
-
         if self.isLoggedIn == False :
-            print("\n")
-            print("Please Login First")
-            print("\n")
+            self.print_error("Please Login First")
         else :
             send_msg=command_list[0]+" "+ self.current_userid+" "+command_list[1]
             self.encrypted_send(send_msg,self.user_key_pair.server_key)
             msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
 
             if(msg=="False") :
-                print("Group exists! Please use JOIN command to join the group")
-            		
-            	
-
+                self.print_error("Group exists! Please use JOIN command to join the group")
             else :
-                print(f"{command_list[1]} group created succesfully ")
+                self.print_msg(command_list[1]+" group created succesfully ")
                 self.my_group_list.add(command_list[1])
                 self.user_key_pair.joingroup(command_list[1],msg)
-            	
-        print("\n")
-	
-    		
-    		    	
 
     def join_group(self,command_list):
         if self.isLoggedIn == False :
-            print("\n")
-            print("Please Login First")
-            print("\n")
+            self.print_error("Please Login First")
         else :
             send_msg=command_list[0]+" "+ self.current_userid+" "+command_list[1]
             self.encrypted_send(send_msg,self.user_key_pair.server_key)    		
             msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
 
             if(msg=="False") :
-                print("Invalid command")
-
+                self.print_error("Invalid command")
             else :
-
-                print(f"{self.current_userid} joined group {command_list[1]} succesfully ")
-                self.my_group_list.add(command_list[1])
-                self.user_key_pair.joingroup(command_list[1],msg)
-                
-
-        print("\n")
-
-
-
-
-
+                if command_list[1] in self.my_group_list:
+                    self.print_error(str(self.current_userid)+" is already a member of "+str(command_list[1]))
+                else:
+                    self.print_msg(str(self.current_userid)+" joined group "+str(command_list[1])+" succesfully ")
+                    self.my_group_list.add(command_list[1])
+                    self.user_key_pair.joingroup(command_list[1],msg)
 
     def send_message(self,command_list):
-        #check if we have to send file or not 
-        #get the user info from server
-        #create client as a sever
-        #send message from p2p
-        #if message is type of file then create a function to send file
-        if(len(command_list)==3):
-            self.send_message_msg(command_list)
+        if len(command_list) < 3:
+            self.print_error("Invalid command")
+        elif command_list[1]=="FILE":
+            if len(command_list) < 4:
+                self.print_error("Invalid command")
+            else:
+                self.send_message_file(command_list)
         else:
-            self.send_message_file(command_list)
+            temp_list = command_list[2:]
+            temp_str=" ".join(temp_list)
+            command_list=command_list[0:2]
+            command_list.append(temp_str)
+            print()
+            print(command_list)
+            print()
+            self.send_message_msg(command_list)
 
     def send_message_msg(self,command_list):
-        send_msg=command_list[0]+" "+ self.current_userid+" "+ command_list[1]
+        receiver=command_list[1]
+        send_msg=command_list[0]+" "+ self.current_userid+" "+ receiver
 
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-
-        # print(msg)
-        ip=msg.split(" ")[0]
-        port=int(msg.split(" ")[1])
-
-        thread1=threading.Thread(target=self.send_message_data,args=(ip,port,command_list[2]))
-        thread1.start()
-        thread1.join()
+        
+        if msg=="False":
+            self.print_error("Invalid command")
+        else:
+            ip=msg.split(" ")[0]
+            port=int(msg.split(" ")[1])
+            message=command_list[2]
+            thread1=threading.Thread(target=self.send_message_data,args=(ip,port,message))
+            thread1.start()
+            thread1.join()
 
 
     def send_message_file(self,command_list):
-        send_msg=command_list[0]+" "+ self.current_userid+" "+ command_list[2]
-
+        receiver=command_list[2]
+        send_msg=command_list[0]+" "+ self.current_userid+" "+ receiver
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-
-        # print(msg)
         ip=msg.split(" ")[0]
         port=int(msg.split(" ")[1])
-
-        thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,command_list[3]))
+        filename=command_list[3]
+        thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,filename))
         thread1.start()
         thread1.join()
-
-
-
 
     def send_message_data(self,ip,port,message,group=None):
         cli_server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -269,23 +242,22 @@ class Client:
         try:                       
             addr=(ip,port)            
             print(addr)
-            cli_server.connect(addr)                      #establish connection with server on address ADDR=SERVER_IP,SERVER_PORT
+            cli_server.connect(addr)                      #establish connection with server on address ADDR=RECEIVER_IP,RECEIVER_PORT
             
         except socket.error as e:
-            print(str(e))
+            self.print_error(str(e))
             sys.exit()
         if group==None:
             self.send(self.user_key_pair.imd_key,cli_server)
             sk=self.recieve_message(cli_server)
             sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
-            # print(f"Key:{sk}")
             msg_type=self.current_userid+" : FILE= "+filename
         else:
             msg="GROUP "+group
             self.send(msg,cli_server)
             sk=self.user_key_pair.groups[group]
             sk=int(sk)
-        msg_type=self.current_userid+"->"+group+":"+"FILE= "+filename
+            msg_type=self.current_userid+"->"+group+":"+"FILE= "+filename
         self.encrypted_send(msg_type,sk,cli_server)
         self.encrypted_send(filename,sk,cli_server)
         try:
@@ -297,88 +269,45 @@ class Client:
             
             
         except FileNotFoundError as f:
-            print(str(f))
-            # self.encrypted_send(f,sk,cli_server)
-            # sys.exit()
-
-        
-
-
-
-
-    	
+            self.print_error(str(f))     
 
     def list_group(self,command_list):
-    	#print(" group list ")
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
         group_len=int(msg)
         if group_len==0:
-            print("NO GROUPS")
+            self.print_error("NO GROUPS")
         else:
-            print("GROUP LIST:")
+            self.print_msg("GROUP LIST:")
             for i in range(0,group_len):
                 msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-                print(msg)
+                self.print_msg(msg)
                 
-
-
-
-
-
-
-
-
     def send_to_group(self,command_list):
-        print()
-        print()
-        print("command list=", command_list)
-        print()
-        print()
-        #multiple groups can be there so extract the group names
-        #for each group extract the each member info (user id ,ip ,port )
-        #for each user  in each group use send message to send message
         if(len(command_list)<3):
-            print("Invalid command")
+            self.print_error("Invalid command")
         else:
             if command_list[1]=="FILE":
-                print("file wale mein")
-                groupnames=command_list[2:-1]
-                message=command_list[-1]
+                groupnames=command_list[2].split(',')
                 for i in groupnames:
                     if i not in self.my_group_list:
-                        print("User not part of group: "+i)
+                        self.print_error("User not part of group: "+i)
                     else:
-                        temp_list=command_list[0:2]
-                        temp_list.append(i)
-                        temp_list.append(message)
-                        print("temp_list=",temp_list)
-                        temp_str=' '.join(temp_list)
-                        print("temp_str=",temp_str)
-                        thread2=threading.Thread(target=self.send_to_group_file,args=(temp_str,))
+                        command_list[2]=i
+                        thread2=threading.Thread(target=self.send_to_group_file,args=(command_list,))
                         thread2.start()
                         thread2.join()
             else:
-                groupnames=command_list[1:-1]
-                message=command_list[-1]
+                groupnames=command_list[1].split(',')
                 for i in groupnames:
                     if i not in self.my_group_list:
-                        print("User not part of group: "+i)
+                        self.print_error("User not part of group: "+i)
                     else:
-                        temp_list=command_list[0:1]
-                        temp_list.append(i)
-                        temp_list.append(message)
-                        print("temp_list=",temp_list)
-                        temp_str=' '.join(temp_list)
-                        print("temp_str=",temp_str)
-                        thread3=threading.Thread(target=self.send_to_group_msg,args=(temp_str,))
+                        command_list[1]=i
+                        thread3=threading.Thread(target=self.send_to_group_msg,args=(command_list,))
                         thread3.start()
                         thread3.join()
 
-
-
-
-    def send_to_group_msg(self,command_str):
-        command_list=command_str.split(" ")
+    def send_to_group_msg(self,command_list):
         send_msg=command_list[0]+" "+ self.current_userid+" "+ command_list[1]
 
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
@@ -386,19 +315,18 @@ class Client:
         msg1=int(msg1)
         msg1-=1
         for i in range(msg1):
-        # print(msg)
             msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-            
+
             ip=msg.split(" ")[0]
             port=int(msg.split(" ")[1])
-
-            thread1=threading.Thread(target=self.send_message_data,args=(ip,port,command_list[2],command_list[1]))
+            message=command_list[2:]
+            message=" ".join(message)
+            group=command_list[1]
+            thread1=threading.Thread(target=self.send_message_data,args=(ip,port,message,group))
             thread1.start()
-            thread1.join()
-        # print(command_list)	
+            thread1.join()	
 
-    def send_to_group_file(self,command_str):
-        command_list=command_str.split(" ")
+    def send_to_group_file(self,command_list):
         send_msg=command_list[0]+" "+ self.current_userid+" "+ command_list[2]
 
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
@@ -406,7 +334,6 @@ class Client:
         msg1=int(msg1)
         msg1-=1
         for i in range(msg1):
-        # print(msg)
             msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
             
             ip=msg.split(" ")[0]
@@ -415,9 +342,6 @@ class Client:
             thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,command_list[3],command_list[2]))
             thread1.start()
             thread1.join()
-        # print(command_list)
-
-
     	
     def send(self,msg,cli=None) :
         if cli==None:
@@ -464,72 +388,49 @@ class Client:
             cli_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
             cli_server.bind(self.CLI_ADDR)            
         except socket.error as e:
-            print(str(e))
-        print("//////////////////SERVER STARTED///////////")
+            self.print_error(str(e))
 
         cli_server.listen(5)
         while True : 
 
             connection,address=cli_server.accept()
-            print("/////////")
             thread1=threading.Thread(target=self.handle_client,args=(connection,address))
             thread1.start()
             thread1.join()
             
 
     def handle_client(self,conn,address):
-        msg=self.recieve_message(conn)    
+        msg=self.recieve_message(conn)
         if msg.startswith("GROUP"):
             sk=msg.split(" ")[1]
             sk=self.user_key_pair.groups[sk]
             sk=int(sk)
         else:            
-            sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(msg)
-            # print(f"Key:{sk}")        
+            sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(msg)  
             self.send(self.user_key_pair.imd_key,conn)
         msg=self.recieve_message_decrypt(sk,conn)
-        msg_temp=msg.split(',')
-        if msg_temp[0]=="FILE":
-            print(f"->{msg_temp[1]}:{msg_temp[0]}")
+        msg_temp=msg.split(':')
+        if msg_temp[1].strip().find("FILE")!=-1:
+            self.print_msg(msg)
             self.handle_client_file(conn,sk)
-
         else:
-            print(f"->{msg}")
-        print()
-        print()
+            self.print_msg(f"->{msg}")
 
     def handle_client_file(self,conn,sk):         
         
         file_name=self.recieve_message_decrypt(sk,conn)
-        file_data=self.recieve_message_decrypt(sk,conn,1)   
-        #print(f"->{file_name} received")
+        file_data=self.recieve_message_decrypt(sk,conn,1)
         file_name1=file_name.split(".")
         file_name1=file_name1[0]+str(self.CLI_ADDR)+"."+file_name1[1]
         fd=open(file_name1,"wb")
         fd.write(file_data)
         fd.close()
-        print(f"->{file_name} received")
+        self.print_msg(f"->{file_name} received")
         
 
 
 client =Client(SERVER,PORT,"127.0.0.1")
 client.connectToServer()
-
 client.operate()
-# client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-# client.connect(ADDR)
-
-
-
-
-# out= 1
-# while out :
-# 	txt=input()
-	
-# 	if(txt== "quit" ):
-# 		send(DISCONNECT_MESSAGE)
-# 		out=0
-# 	else :
-# 		send(txt)
 		
 	
