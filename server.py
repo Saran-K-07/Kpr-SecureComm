@@ -72,7 +72,7 @@ class Server :
 		self.server.listen(10)
 		self.print_cmd(f"[*] Starting server ({self.IP}) on port {self.PORT}")
 		while True :                                
-			connection,address=self.server.accept()         #accepting client socket, address(port) from client
+			connection,address=self.server.accept()         #accepting client socket, address(ip,port) from client
 			thread=threading.Thread(target=self.handle_client,args=(connection,address))
 			thread.start()
 			print(f"[ACTIVE CONNECTIONS] {threading.activeCount()-1}")

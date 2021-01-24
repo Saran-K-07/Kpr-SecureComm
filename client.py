@@ -4,15 +4,15 @@ from user_client import user_client
 from security import Diffie_Hellman,DES
 import sys
 
+'''Global variables'''
 PORT = 5051 
 HEADER = 64
 FORMAT = "utf-8"
-# SERVER = socket.gethostbyname(socket.gethostname())
-
 SERVER = "127.0.0.2"
-#ADDR = (SERVER,PORT)
 DISCONNECT_MESSAGE="!DISCONNECT"
 
+
+###*******CLIENT CLASS*****###
 class Client:
     def __init__(self, server_ip, port, client_ip):
         self.SERVER_IP = server_ip                              #server's ip to connect to
@@ -32,7 +32,7 @@ class Client:
             self.client.connect((self.ADDR))                      #establish connection with server on address ADDR=SERVER_IP,SERVER_PORT
 
         except socket.error as e:
-            print(str(e))
+            self.print_error(str(e))
             sys.exit()
         self.shared_key_server()
         thread=threading.Thread(target=self.listen_client)
@@ -47,7 +47,7 @@ class Client:
         print()
 
     def operate(self):
-        print("Please choose from one of the following commands")
+        print("\nPlease choose from one of the following commands")
         print("CREATE_USER <NAME> <USER_NAME> <PASSWORD>")
         print("LOGIN <USER_NAME> <PASSWORD>")
         print("JOIN <GROUP_NAME> ")
@@ -94,7 +94,6 @@ class Client:
         if msg_length :
             msg_length=int(msg_length)	                    #convert length to int as it was received in utf-8 format
             msg=cli.recv(msg_length).decode(FORMAT)	 #reset buffer size to received msg length size and receive msg
-
         return msg
 
 
@@ -116,7 +115,7 @@ class Client:
     def create_user(self,command_list):
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
         if msg =="True":
-            self.print_msg("User logged in successfully")	
+            self.print_msg("User created successfully")	
         else:
             self.print_error("Error: wrong number of arguments")
 
@@ -166,7 +165,7 @@ class Client:
         if len(command_list) < 3:
             self.print_error("Invalid command")
         elif command_list[1]=="FILE":
-            if len(command_list) < 4:
+            if len(command_list) !=4 :
                 self.print_error("Invalid command")
             else:
                 self.send_message_file(command_list)
@@ -183,10 +182,8 @@ class Client:
     def send_message_msg(self,command_list):
         receiver=command_list[1]
         send_msg=command_list[0]+" "+ self.current_userid+" "+ receiver
-
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-        
         if msg=="False":
             self.print_error("Invalid command")
         else:
@@ -203,30 +200,31 @@ class Client:
         send_msg=command_list[0]+" "+ self.current_userid+" "+ receiver
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-        ip=msg.split(" ")[0]
-        port=int(msg.split(" ")[1])
-        filename=command_list[3]
-        thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,filename))
-        thread1.start()
-        thread1.join()
+        if msg=="False":
+            self.print_error("Invalid command")
+        else:
+            ip=msg.split(" ")[0]
+            port=int(msg.split(" ")[1])
+            filename=command_list[3]
+            thread1=threading.Thread(target=self.send_message_filedata,args=(ip,port,filename))
+            thread1.start()
+            thread1.join()
 
     def send_message_data(self,ip,port,message,group=None):
         cli_server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cli_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:                       
-            addr=(ip,port)            
-            print(addr)
+            addr=(ip,port)
             cli_server.connect(addr)                      #establish connection with server on address ADDR=SERVER_IP,SERVER_PORT
             
         except socket.error as e:
-            print(str(e))
+            self.print_error(str(e))
             sys.exit()
         if group==None:
             self.send(self.user_key_pair.imd_key,cli_server)
             sk=self.recieve_message(cli_server)
             sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
             message=self.current_userid+" : "+message
-            # print(f"Key:{sk}")
         else:
             msg="GROUP "+group
             self.send(msg,cli_server)
@@ -240,8 +238,7 @@ class Client:
         cli_server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cli_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:                       
-            addr=(ip,port)            
-            print(addr)
+            addr=(ip,port)
             cli_server.connect(addr)                      #establish connection with server on address ADDR=RECEIVER_IP,RECEIVER_PORT
             
         except socket.error as e:
@@ -359,7 +356,6 @@ class Client:
         self.send(self.user_key_pair.imd_key)
         sk=self.recieve_message()
         sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
-        print(f"Key:{sk}")
         self.user_key_pair.set_server_key(sk)
         ip_port=self.recieve_message()
         ip=ip_port.split()[0]
