@@ -14,9 +14,9 @@ It is an end to end messaging system like Whatsapp . It is a multiclient chat ap
 
 ### Implementation
 ### Server side address highlighted, active connection status shown, client side activity result displayed - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/6.png)
-### User Create - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/1.png)
-### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/2.png)
-### User Joining Group and Listing Groups - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/3.png)
-### Sending File to Group - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/4.png)
-### Sending Image to User - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/5.png)
+### User Creation  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/1.png)
+### User Validation  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/2.png)
+### User Joining Group and Listing Groups  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/3.png)
+### Sending File to Group  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/4.png)
+### Sending Image to User  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/5.png)
 ##### Bonus: Project is implemented using Object Oriented Programming.
