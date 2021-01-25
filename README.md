@@ -13,6 +13,6 @@ It is an end to end messaging system like Whatsapp . It is a multiclient chat ap
 2. Load balancing of data is not fixed.All the clients request to a single server .There is a single server thus we cannot  distribute the load between multiple servers when large number of request is queued.
 
 ### Implementation
-### User Validation - ![alt text]()
+### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/1.png)
 
 ##### Bonus: Project is implemented using Object Oriented Programming.
