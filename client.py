@@ -410,7 +410,7 @@ class Client:
             self.send(self.user_key_pair.imd_key,conn)
         msg=self.recieve_message_decrypt(sk,conn)
         if msg.find("fIlE")!=-1:
-            self.print_msg(msg[:-5])
+            self.print_msg(msg[:-4])
             self.handle_client_file(conn,sk)
         else:
             self.print_msg(f"->{msg}")
