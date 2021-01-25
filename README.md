@@ -14,5 +14,9 @@ It is an end to end messaging system like Whatsapp . It is a multiclient chat ap
 
 ### Implementation
 ### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/1.png)
-
+### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/2.png)
+### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/3.png)
+### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/4.png)
+### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/5.png)
+### User Validation - ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/6.png)
 ##### Bonus: Project is implemented using Object Oriented Programming.
