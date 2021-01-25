@@ -62,7 +62,6 @@ class Client:
         while quit == False :
             my_input=input()
             my_input_list=my_input.split()
-            print("my_input_list " ,my_input_list)   ##!!!!!!!!!!!!!REMEMBER TO COMMENT!!!
             if (len(my_input_list)!=0) :
                 if(my_input_list[0] == "CREATE_USER") :
                     self.encrypted_send(my_input,self.user_key_pair.server_key)
@@ -114,20 +113,26 @@ class Client:
 
     def create_user(self,command_list):
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-        if msg =="True":
-            self.print_msg("User created successfully")	
+        if msg =="1":
+            self.print_msg("User created successfully")
+        elif msg =="-1":
+            self.print_error("Error: username already exists")
         else:
             self.print_error("Error: wrong number of arguments")
 
     def login_user(self,command_list):
-    	msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-    	print(msg)
-    	if msg=="True" :
-    		self.current_userid = command_list[1]
-    		self.isLoggedIn=True
-    		self.print_msg(str(command_list[1])+" logged in succesfully ")
-    	else :
-    		self.print_error("Invalid Credentials")
+        msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
+        if msg == "1":
+            self.current_userid = command_list[1]
+            self.isLoggedIn=True
+            self.print_msg(str(command_list[1])+" logged in successfully")
+        elif msg=="-1":
+            self.print_msg("Invalid credentials")
+        elif msg=="-2":
+            self.print_msg("Username doesn't exist. Signup first")
+        else:
+            self.print_error("Wrong arguments")
+
     def create_group(self,command_list):
         if self.isLoggedIn == False :
             self.print_error("Please Login First")
@@ -174,9 +179,6 @@ class Client:
             temp_str=" ".join(temp_list)
             command_list=command_list[0:2]
             command_list.append(temp_str)
-            print()
-            print(command_list)
-            print()
             self.send_message_msg(command_list)
 
     def send_message_msg(self,command_list):
@@ -184,8 +186,10 @@ class Client:
         send_msg=command_list[0]+" "+ self.current_userid+" "+ receiver
         self.encrypted_send(send_msg,self.user_key_pair.server_key)
         msg=self.recieve_message_decrypt(self.user_key_pair.server_key)
-        if msg=="False":
-            self.print_error("Invalid command")
+        if msg=="0":
+            self.print_error("Error:wrong arguments")
+        elif msg=="-1":
+            self.print_error("Receiver username not part of chat application")
         else:
             ip=msg.split(" ")[0]
             port=int(msg.split(" ")[1])
@@ -248,13 +252,13 @@ class Client:
             self.send(self.user_key_pair.imd_key,cli_server)
             sk=self.recieve_message(cli_server)
             sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(sk)
-            msg_type=self.current_userid+" : FILE= "+filename
+            msg_type=self.current_userid+" : FILE= "+filename+"fIlE"
         else:
             msg="GROUP "+group
             self.send(msg,cli_server)
             sk=self.user_key_pair.groups[group]
             sk=int(sk)
-            msg_type=self.current_userid+"->"+group+":"+"FILE= "+filename
+            msg_type=self.current_userid+"->"+group+":"+"FILE= "+filename+"fIlE"
         self.encrypted_send(msg_type,sk,cli_server)
         self.encrypted_send(filename,sk,cli_server)
         try:
@@ -405,23 +409,24 @@ class Client:
             sk=Diffie_Hellman(self.user_key_pair.private_key).create_shared_key(msg)  
             self.send(self.user_key_pair.imd_key,conn)
         msg=self.recieve_message_decrypt(sk,conn)
-        msg_temp=msg.split(':')
-        if msg_temp[1].strip().find("FILE")!=-1:
-            self.print_msg(msg)
+        if msg.find("fIlE")!=-1:
+            self.print_msg(msg[:-5])
             self.handle_client_file(conn,sk)
         else:
             self.print_msg(f"->{msg}")
 
     def handle_client_file(self,conn,sk):         
-        
-        file_name=self.recieve_message_decrypt(sk,conn)
-        file_data=self.recieve_message_decrypt(sk,conn,1)
-        file_name1=file_name.split(".")
-        file_name1=file_name1[0]+str(self.CLI_ADDR)+"."+file_name1[1]
-        fd=open(file_name1,"wb")
-        fd.write(file_data)
-        fd.close()
-        self.print_msg(f"->{file_name} received")
+        try:
+            file_name=self.recieve_message_decrypt(sk,conn)
+            file_data=self.recieve_message_decrypt(sk,conn,1)
+            file_name1=file_name.split(".")
+            file_name1=file_name1[0]+str(self.CLI_ADDR)+"."+file_name1[1]
+            fd=open(file_name1,"wb")
+            fd.write(file_data)
+            fd.close()
+            self.print_msg(f"->{file_name} received")
+        except:
+            self.print_error("Error in receiving file")
         
 
 

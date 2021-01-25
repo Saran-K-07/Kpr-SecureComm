@@ -107,22 +107,23 @@ class Server :
 				if msg_list[0] == "CREATE_USER" :                    #command received= ['CREATE_USER', 'name', 'username', 'password']
 
 					if(len(msg_list) != 4 ):
-						msg="False"
+						msg="0"
 						self.send_encrypted(msg,conn,address)
-
+					elif msg_list[2] in self.user_dict:
+						msg="-1"
+						self.send_encrypted(msg,conn,address)
 					else :
-
 						new_user = user(msg_list[1],msg_list[2],msg_list[3],address[0],address[1])  #creating user object by calling its constuctor
 						self.user_dict[msg_list[2]] = new_user                                      #adding user to server's list
 						self.print_cmd("checking new user created"+str(new_user.getIpPort()))
-						msg="True"
+						msg="1"
 						self.send_encrypted(msg,conn,address)
 
 				elif msg_list[0] =="LOGIN" :                       #command received= ['LOGIN','username','password']
 
 					if(len(msg_list) != 3 ):
 						print("[LOGIN unsuccessful]")
-						msg="False"
+						msg="0"
 						self.send_encrypted(msg,conn,address)
 					else :			
 						username = msg_list[1]
@@ -133,24 +134,27 @@ class Server :
 							curr_user=self.user_dict[username]         #adding user to server's user list
 							login_status=curr_user.signIn(username,password)
 							if login_status == True :
-								msg="True"
+								msg="1"
 								self.send_encrypted(msg,conn,address)
 
 							else :
 								print("[LOGIN unsuccessful]")
-								msg="False"
+								msg="-1"
 								self.send_encrypted(msg,conn,address)
 						except :
 							print("[LOGIN unsuccessful]")
-							msg="False"
+							msg="-2"
 							self.send_encrypted(msg,conn,address)
 						
 								
 				elif msg_list[0] == "SEND" :                     #command received= ['SEND','sender','receiver']
 					#self.print_cmd("Please send the message")           
-					if len(msg_list) != 3 or (msg_list[2] not in self.user_dict):
+					if len(msg_list) != 3:
 						print("[SEND unsuccessful]")
-						msg="False"
+						msg="0"
+						self.send_encrypted(msg,conn,address)
+					elif msg_list[2] not in self.user_dict:
+						msg="-1"
 						self.send_encrypted(msg,conn,address)
 					elif  len(msg_list) == 3:
 						addr=self.user_dict[msg_list[2]].getIpPort()
