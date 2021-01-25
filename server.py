@@ -113,9 +113,8 @@ class Server :
 						msg="-1"
 						self.send_encrypted(msg,conn,address)
 					else :
-						new_user = user(msg_list[1],msg_list[2],msg_list[3],address[0],address[1])  #creating user object by calling its constuctor
+						new_user = user(msg_list[1],msg_list[2],msg_list[3])  #creating user object by calling its constuctor
 						self.user_dict[msg_list[2]] = new_user                                      #adding user to server's list
-						self.print_cmd("checking new user created"+str(new_user.getIpPort()))
 						msg="1"
 						self.send_encrypted(msg,conn,address)
 
@@ -134,6 +133,8 @@ class Server :
 							curr_user=self.user_dict[username]         #adding user to server's user list
 							login_status=curr_user.signIn(username,password)
 							if login_status == True :
+								curr_user.setIpPort(address[0],address[1])
+								self.print_cmd("checking new user signed in"+str(new_user.getIpPort()))
 								msg="1"
 								self.send_encrypted(msg,conn,address)
 
@@ -142,7 +143,7 @@ class Server :
 								msg="-1"
 								self.send_encrypted(msg,conn,address)
 						except :
-							print("[LOGIN unsuccessful]")
+							print("[LOGIN unsuccessful RN]")
 							msg="-2"
 							self.send_encrypted(msg,conn,address)
 						
