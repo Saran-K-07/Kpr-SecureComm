@@ -3,7 +3,8 @@ import threading
 from user_client import user_client
 from security import Diffie_Hellman,DES
 import sys
-
+import os 
+from math import ceil 
 '''Global variables'''
 PORT = 5051 
 HEADER = 64
@@ -26,6 +27,9 @@ class Client:
         self.client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  
         self.current_userid=""
         self.my_group_list= set()
+
+
+
 
     def connectToServer(self):
         try:
@@ -103,11 +107,19 @@ class Client:
         msg_length=cli.recv(HEADER).decode(FORMAT)   #get length of  msg to receive by using initial buffer size of header=64B
         if msg_length :
             msg_length=int(msg_length)                      #convert length to int as it was received in utf-8 format
-            msg=cli.recv(msg_length)  #reset buffer size to received msg length size and receive msg
+              
             if file==None:
+                msg=cli.recv(msg_length)
                 msg=DES(key).decryption(msg)
             else:
-                msg=DES(key).decryption(msg,1)
+                msg=msg.encode(FORMAT)
+                
+                while msg_length:
+                    msg1 = cli.recv(min(msg_length,102400))
+                    
+                    msg+=DES(key).decryption(msg1,1)
+                    msg_length-=min(msg_length,102400)
+                    
         return msg
 
 
@@ -264,9 +276,19 @@ class Client:
         try:
             
             fd=open(filename,"rb")
-            filedata=fd.read()    
+            file_size = os.path.getsize(filename)
+            n=file_size/10240
+            n=int(ceil(n))
+            n1=str(n)
+            self.encrypted_send(n1,sk,cli_server)
+            for i in range(n):
+                filedata=fd.read(10240)
+                self.encrypted_send(filedata,sk,cli_server,1)
+                
             fd.close()
-            self.encrypted_send(filedata,sk,cli_server,1)
+            
+
+            self.print_msg("file sent")
             
             
         except FileNotFoundError as f:
@@ -377,7 +399,8 @@ class Client:
         send_length = str(msg_length).encode(FORMAT)                 
         send_length += b' ' * (HEADER -len(send_length))
         cli.send(send_length)
-        cli.send(message)       
+        
+        cli.sendall(message)       
 
 
     def listen_client(self):
@@ -417,17 +440,19 @@ class Client:
 
     def handle_client_file(self,conn,sk):         
         try:
-            file_name=self.recieve_message_decrypt(sk,conn)
-            file_data=self.recieve_message_decrypt(sk,conn,1)
+            file_name=self.recieve_message_decrypt(sk,conn) 
+            n=self.recieve_message_decrypt(sk,conn)
             file_name1=file_name.split(".")
             file_name1=file_name1[0]+str(self.CLI_ADDR)+"."+file_name1[1]
-            fd=open(file_name1,"wb")
-            fd.write(file_data)
+            fd=open(file_name1,"wb")            
+             
+            for i in range(int(n)):
+                file_data=self.recieve_message_decrypt(sk,conn,1)            
+                fd.write(file_data)            
             fd.close()
             self.print_msg(f"->{file_name} received")
         except:
             self.print_error("Error in receiving file")
-        
 
 
 client =Client(SERVER,PORT,"127.0.0.1")
