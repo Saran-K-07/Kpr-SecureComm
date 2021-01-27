@@ -30,3 +30,4 @@ It is an end to end messaging system like Whatsapp . It is a multiclient chat ap
 ### User Joining Group and Listing Groups  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/3.png)
 ### Sending File to Group  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/4.png)
 ### Sending Image to User  ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/5.png)
+### Class Diagram ![alt text](https://github.com/nayanika0208/sns-chat-application/blob/master/sns_class.png)
