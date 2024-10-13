@@ -1,4 +1,4 @@
-# sns-chat-application
+# KPR SecureComm
 
 ### About the Project
 It is an end to end messaging system like Whatsapp . It is a multiclient chat application with a server component. One user can send text messages ,files,JPEG to other individuals as well as in the groups.The message is encrypted using the Triple DES and key will be Diffe-Hellman key type exchange between clients.
